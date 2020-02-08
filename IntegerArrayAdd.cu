@@ -6,10 +6,11 @@
 using namespace std;
 using namespace std::chrono;
 
-__global__ void AddIntegerArray(int *c, const int *a, const int *b)
+__global__ void AddIntegerArray(int *c, const int *a, const int *b, const int n)
 {
-	int idx = blockIdx.x;
-	c[idx] = a[idx] + b[idx];
+	int idx = threadIdx.x + blockIdx.x * blockDim.x;
+	if (idx < n)
+		c[idx] = a[idx] + b[idx];
 }
 
 void PrintArray(int *a, int size)
@@ -37,7 +38,10 @@ void GPUAdd(int *c, const int* a, const int* b, int arraySize)
 	cudaMemcpy(d_a, a, numBytes, cudaMemcpyHostToDevice);
 	cudaMemcpy(d_b, b, numBytes, cudaMemcpyHostToDevice);
 
-	AddIntegerArray << <arraySize, 1 >> > (d_c, d_a, d_b);
+	const int numThreadsPerBlock = 32;
+	const int numBlocks = arraySize / numThreadsPerBlock + 1;
+	//cout << "Number of blocks: " << numBlocks << endl;
+	AddIntegerArray << <numBlocks, numThreadsPerBlock >> > (d_c, d_a, d_b, arraySize);
 
 	cudaMemcpy(c, d_c, numBytes, cudaMemcpyDeviceToHost);
 
@@ -74,8 +78,8 @@ void TestIntegerArrayAddFor(int size)
 		
 	/*PrintArray(a, arraySize);
 	PrintArray(b, arraySize);
-	PrintArray(c, arraySize);
-*/
+	PrintArray(c, arraySize);*/
+
 	delete[] a;
 	delete[] b;
 	delete[] c;
