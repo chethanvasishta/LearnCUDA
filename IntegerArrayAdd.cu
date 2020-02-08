@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <chrono>
+#include <math.h>
 using namespace std;
 using namespace std::chrono;
 
@@ -51,14 +52,12 @@ double TimeFunction(adder_t func, int *c, const int *a, const int *b, int arrayS
 	auto start = high_resolution_clock::now();
 	func(c, a, b, arraySize);
 	auto stop = high_resolution_clock::now();
-	return (duration_cast<milliseconds>(stop - start)).count();
+	return (duration_cast<microseconds>(stop - start)).count();
 }
 
-void TestIntegerArrayAdd()
+void TestIntegerArrayAddFor(int size)
 {
-	cout << "Adding two arrays" << endl;
-
-	const int arraySize = 10;
+	const int arraySize = size;
 	int *a = new int[arraySize];
 	int *b = new int[arraySize];
 	int *c = new int[arraySize];
@@ -69,11 +68,24 @@ void TestIntegerArrayAdd()
 		b[i] = i * 15;
 	}
 
-	cout << "CPU took " << TimeFunction(CPUAdd,c, a, b, arraySize) << " ms" << endl;
-	cout << "GPU took " << TimeFunction(GPUAdd, c, a, b, arraySize) << " ms" << endl;
-
-	PrintArray(a, arraySize);
+	auto cputime = TimeFunction(CPUAdd, c, a, b, arraySize);
+	auto gputime = TimeFunction(GPUAdd, c, a, b, arraySize);
+	cout << size << "\t|\t" << cputime << "\t|\t" << gputime << endl;
+		
+	/*PrintArray(a, arraySize);
 	PrintArray(b, arraySize);
 	PrintArray(c, arraySize);
+*/
+	delete[] a;
+	delete[] b;
+	delete[] c;
+}
 
+void TestIntegerArrayAdd()
+{
+	cout << "Size\t|\tCPU\t|\tGPU" << endl;
+
+	TestIntegerArrayAddFor(1); // test
+	for (int i = 1; i <= 8; ++i)
+		TestIntegerArrayAddFor(pow(10, i));
 }
